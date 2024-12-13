@@ -11,6 +11,9 @@ app = Flask(__name__)
 app.secret_key = 'dev'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
 def allowed_file(filename):
@@ -292,11 +295,16 @@ def duplicate_item(inventory_id, item_id):
 def delete_item(inventory_id, item_id):
     with get_db() as db:
         with db.cursor() as cur:
-            cur.execute(
-                "DELETE FROM items WHERE id = %s AND inventory_id = %s", 
-                (item_id, inventory_id)
-            )
-            db.commit()
+            # First verify the item belongs to the user's inventory
+            cur.execute("""
+                SELECT i.* FROM items i 
+                JOIN inventories inv ON i.inventory_id = inv.id 
+                WHERE i.id = %s AND inv.user_id = %s
+            """, (item_id, session["user_id"]))
+            
+            if cur.fetchone():
+                cur.execute("DELETE FROM items WHERE id = %s", (item_id,))
+                db.commit()
     
     return redirect(f"/inventory/{inventory_id}")
 
