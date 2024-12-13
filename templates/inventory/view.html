@@ -80,7 +80,13 @@
                                 <input type="color" class="form-control form-control-color" id="colorPicker{{ item.id }}" name="color" value="{{ item.color }}" required>
                             </div>
                             <div class="mb-3">
-                                <input type="url" class="form-control" name="image_url" value="{{ item.image_url }}" placeholder="Image URL">
+                                <label class="form-label">Image Search</label>
+                                <div class="input-group mb-2">
+                                    <input type="text" class="form-control" id="searchInput{{ item.id if item else '' }}" placeholder="Search product or paste URL">
+                                    <button type="button" class="btn btn-outline-secondary" onclick="searchImages('{{ item.id if item else '' }}')">Search</button>
+                                </div>
+                                <div id="searchResults{{ item.id if item else '' }}" class="row row-cols-2 g-2 mb-2"></div>
+                                <input type="url" class="form-control" name="image_url" value="{{ item.image_url if item else '' }}" placeholder="Image URL">
                             </div>
                             <div class="mb-3">
                                 <textarea class="form-control" name="description" placeholder="Description" rows="3">{{ item.description }}</textarea>
@@ -134,7 +140,13 @@
                         <input type="color" class="form-control form-control-color" id="colorPicker" name="color" value="#000000" required>
                     </div>
                     <div class="mb-3">
-                        <input type="url" class="form-control" name="image_url" placeholder="Image URL">
+                        <label class="form-label">Image Search</label>
+                        <div class="input-group mb-2">
+                            <input type="text" class="form-control" id="searchInput{{ item.id if item else '' }}" placeholder="Search product or paste URL">
+                            <button type="button" class="btn btn-outline-secondary" onclick="searchImages('{{ item.id if item else '' }}')">Search</button>
+                        </div>
+                        <div id="searchResults{{ item.id if item else '' }}" class="row row-cols-2 g-2 mb-2"></div>
+                        <input type="url" class="form-control" name="image_url" value="{{ item.image_url if item else '' }}" placeholder="Image URL">
                     </div>
                     <div class="mb-3">
                         <textarea class="form-control" name="description" placeholder="Description" rows="3"></textarea>
@@ -176,5 +188,53 @@ document.querySelectorAll('.itemType').forEach(select => {
         updateSubtypes(select);
     }
 });
+
+async function searchImages(itemId = '') {
+    const searchInput = document.getElementById(`searchInput${itemId}`);
+    const resultsContainer = document.getElementById(`searchResults${itemId}`);
+    const query = searchInput.value;
+    
+    resultsContainer.innerHTML = '<div class="col-12 text-center">Searching...</div>';
+    
+    try {
+        const response = await fetch('/search_product_images', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                product_name: query,
+                website_url: query.startsWith('http') ? query : null
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success && data.images.length > 0) {
+            resultsContainer.innerHTML = data.images.map(imageUrl => `
+                <div class="col">
+                    <div class="card h-100">
+                        <img src="${imageUrl}" class="card-img-top" style="object-fit: cover; height: 100px;" alt="Product image">
+                        <div class="card-body p-2">
+                            <button class="btn btn-sm btn-primary w-100" onclick="selectImage('${imageUrl}', '${itemId}')">
+                                Select
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            resultsContainer.innerHTML = '<div class="col-12 text-center">No images found</div>';
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        resultsContainer.innerHTML = '<div class="col-12 text-center text-danger">Error fetching images</div>';
+    }
+}
+
+function selectImage(imageUrl, itemId) {
+    const imageUrlInput = document.querySelector(`#${itemId ? 'editItemModal' + itemId : 'newItemModal'} input[name="image_url"]`);
+    imageUrlInput.value = imageUrl;
+}
 </script>
 {% endblock %}

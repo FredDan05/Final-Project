@@ -19,8 +19,8 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 logging.basicConfig(level=logging.INFO)
 
 # API Configuration
-GOOGLE_API_KEY = 'YOUR_API_KEY'
-SEARCH_ENGINE_ID = 'YOUR_SEARCH_ENGINE_ID'
+GOOGLE_API_KEY = 'AIzaSyB_GqXxJIOY35FpcRSkg1YRMihZtYb1QIo'
+SEARCH_ENGINE_ID = '0612f18a96e7a4b78'
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
