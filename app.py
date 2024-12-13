@@ -1,10 +1,12 @@
 import os
-from flask import Flask, flash, redirect, render_template, request, session
+from flask import Flask, flash, redirect, render_template, request, session, jsonify
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2.extras import DictCursor
 from functools import wraps
+from bs4 import BeautifulSoup
+import requests
 
 # Configure application
 app = Flask(__name__)
@@ -307,5 +309,42 @@ def delete_item(inventory_id, item_id):
     
     return redirect(f"/inventory/{inventory_id}")
 
+
+@app.route("/search_product_images", methods=["POST"])
+@login_required
+def search_product_images():
+    data = request.get_json()
+    website_url = data.get("website_url")
+    
+    try:
+        # Fetch the webpage
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+        response = requests.get(website_url, headers=headers)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # Find all image elements
+        images = []
+        for img in soup.find_all('img'):
+            src = img.get('src')
+            if src:
+                # Convert relative URLs to absolute
+                if not src.startswith(('http://', 'https://')):
+                    src = requests.compat.urljoin(website_url, src)
+                # Filter out small icons and logos
+                if src.endswith(('.jpg', '.jpeg', '.png', '.webp')):
+                    images.append(src)
+        
+        return jsonify({
+            'success': True,
+            'images': images[:12]  # Limit to first 12 images
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 400
+
+
 if __name__ == "__main__":
     app.run(debug=True)
+

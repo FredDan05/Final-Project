@@ -113,6 +113,9 @@
                                 <div class="d-flex gap-2">
                                     <input type="file" class="form-control" name="image" accept="image/*" capture="environment">
                                     <input type="url" class="form-control" name="image_url" value="{{ item.image_url }}" placeholder="or paste image URL">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#imageSearchModal">
+                                        Search Images
+                                    </button>
                                 </div>
                             </div>
                             <div class="mb-3">
@@ -178,6 +181,9 @@
                         <div class="d-flex gap-2">
                             <input type="file" class="form-control" name="image" accept="image/*" capture="environment">
                             <input type="url" class="form-control" name="image_url" placeholder="or paste image URL">
+                            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#imageSearchModal">
+                                Search Images
+                            </button>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -189,6 +195,31 @@
                     <button type="submit" class="btn btn-primary">Add Item</button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<!-- Product Image Search Modal -->
+<div class="modal fade" id="imageSearchModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Search Product Images</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="productName" placeholder="Product Name (e.g., Uniqlo Airism T-Shirt)">
+                </div>
+                <div class="mb-3">
+                    <input type="url" class="form-control" id="websiteUrl" placeholder="Product Website URL">
+                </div>
+                <button class="btn btn-primary" onclick="searchImages()">Search Images</button>
+                
+                <div id="imageResults" class="row row-cols-2 row-cols-md-4 g-4 mt-3">
+                    <!-- Images will be populated here -->
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -221,5 +252,50 @@ document.querySelectorAll('.itemType').forEach(select => {
         updateSubtypes(select);
     }
 });
+
+async function searchImages() {
+    const productName = document.getElementById('productName').value;
+    const websiteUrl = document.getElementById('websiteUrl').value;
+    const resultsContainer = document.getElementById('imageResults');
+    
+    resultsContainer.innerHTML = '<div class="col-12 text-center">Searching...</div>';
+    
+    try {
+        const response = await fetch('/search_product_images', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                product_name: productName,
+                website_url: websiteUrl
+            })
+        });
+        
+        const data = await response.json();
+        
+        resultsContainer.innerHTML = data.images.map(imageUrl => `
+            <div class="col">
+                <div class="card h-100">
+                    <img src="${imageUrl}" class="card-img-top" alt="Product image">
+                    <div class="card-body">
+                        <button class="btn btn-sm btn-primary w-100" onclick="selectImage('${imageUrl}')" data-bs-dismiss="modal">
+                            Select Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    } catch (error) {
+        resultsContainer.innerHTML = '<div class="col-12 text-center text-danger">Error fetching images</div>';
+    }
+}
+
+function selectImage(imageUrl) {
+    // Find the active modal (either new item or edit item)
+    const activeModal = document.querySelector('.modal.show');
+    const imageUrlInput = activeModal.querySelector('input[name="image_url"]');
+    imageUrlInput.value = imageUrl;
+}
 </script>
 {% endblock %}
