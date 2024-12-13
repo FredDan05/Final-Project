@@ -16,7 +16,6 @@ ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-
 # Database helper function
 def get_db():
     DATABASE_URL = os.environ.get('DATABASE_URL')
@@ -61,8 +60,6 @@ with get_db() as conn:
         ''')
         conn.commit()
 
-# End of database stuff
-
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -71,20 +68,13 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated_function
 
-
-
-# auth stuff
-
 @app.route("/register", methods=["GET", "POST"])
 def register():
-    """Register user"""
     if request.method == "POST":
-        # Get form inputs
         username = request.form.get("username")
         password = request.form.get("password")
         confirmation = request.form.get("confirmation")
         
-        # Validate inputs
         if not username:
             flash("Must provide username")
             return redirect("/register")
@@ -101,62 +91,54 @@ def register():
             flash("Passwords must match")
             return redirect("/register")
         
-        # Check if username exists
         with get_db() as db:
-            if db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone():
-                flash("Username already exists")
-                return redirect("/register")
-            
-            # Insert new user
-            db.execute(
-                "INSERT INTO users (username, hash) VALUES (?, ?)",
-                (username, generate_password_hash(password))
-            )
-            db.commit()
+            with db.cursor() as cur:
+                # Check if username exists
+                cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+                if cur.fetchone():
+                    flash("Username already exists")
+                    return redirect("/register")
+                
+                # Insert new user
+                cur.execute(
+                    "INSERT INTO users (username, hash) VALUES (%s, %s)",
+                    (username, generate_password_hash(password))
+                )
+                db.commit()
         
-        # Redirect to login
         return redirect("/login")
     
-    # GET request - show registration form
     return render_template("auth/register.html")
-
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """Log user in"""
-    # Forget any user_id
     session.clear()
 
     if request.method == "POST":
-        # Ensure username was submitted
         if not request.form.get("username"):
             flash("Must provide username")
             return redirect("/login")
 
-        # Ensure password was submitted
         elif not request.form.get("password"):
             flash("Must provide password")
             return redirect("/login")
 
-        # Query database for username
         with get_db() as db:
-            user = db.execute(
-                "SELECT * FROM users WHERE username = ?", 
-                (request.form.get("username"),)
-            ).fetchone()
+            with db.cursor() as cur:
+                cur.execute(
+                    "SELECT * FROM users WHERE username = %s", 
+                    (request.form.get("username"),)
+                )
+                user = cur.fetchone()
 
-            # Ensure username exists and password is correct
-            if user is None or not check_password_hash(user["hash"], request.form.get("password")):
-                flash("Invalid username and/or password")
-                return redirect("/login")
+                if user is None or not check_password_hash(user["hash"], request.form.get("password")):
+                    flash("Invalid username and/or password")
+                    return redirect("/login")
 
-            # Remember which user has logged in
-            session["user_id"] = user["id"]
+                session["user_id"] = user["id"]
 
-        # Redirect user to home page
         return redirect("/")
 
-    # User reached route via GET (as by clicking a link or via redirect)
     return render_template("auth/login.html")
 
 @app.route("/logout")
@@ -164,19 +146,16 @@ def logout():
     session.clear()
     return redirect("/")
 
-
-# end of auth
-
-
-
 @app.route("/")
 @login_required
 def index():
     with get_db() as db:
-        inventories = db.execute(
-            "SELECT * FROM inventories WHERE user_id = ?", 
-            (session["user_id"],)
-        ).fetchall()
+        with db.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM inventories WHERE user_id = %s", 
+                (session["user_id"],)
+            )
+            inventories = cur.fetchall()
     return render_template("index.html", inventories=inventories)
 
 @app.route("/create_inventory", methods=["POST"])
@@ -188,11 +167,12 @@ def create_inventory():
         return redirect("/")
         
     with get_db() as db:
-        db.execute(
-            "INSERT INTO inventories (user_id, name) VALUES (?, ?)",
-            (session["user_id"], name)
-        )
-        db.commit()
+        with db.cursor() as cur:
+            cur.execute(
+                "INSERT INTO inventories (user_id, name) VALUES (%s, %s)",
+                (session["user_id"], name)
+            )
+            db.commit()
     return redirect("/")
 
 @app.route("/inventory/<int:inventory_id>")
@@ -201,29 +181,30 @@ def view_inventory(inventory_id):
     type_filter = request.args.get('type')
     
     with get_db() as db:
-        # Get all user's inventories for sidebar
-        inventories = db.execute(
-            "SELECT * FROM inventories WHERE user_id = ?",
-            (session["user_id"],)
-        ).fetchall()
-        
-        # Get current inventory details
-        inventory = db.execute(
-            "SELECT * FROM inventories WHERE id = ? AND user_id = ?",
-            (inventory_id, session["user_id"])
-        ).fetchone()
-        
-        # Get items with optional type filter
-        if type_filter:
-            items = db.execute(
-                "SELECT * FROM items WHERE inventory_id = ? AND type = ?",
-                (inventory_id, type_filter)
-            ).fetchall()
-        else:
-            items = db.execute(
-                "SELECT * FROM items WHERE inventory_id = ?",
-                (inventory_id,)
-            ).fetchall()
+        with db.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM inventories WHERE user_id = %s",
+                (session["user_id"],)
+            )
+            inventories = cur.fetchall()
+            
+            cur.execute(
+                "SELECT * FROM inventories WHERE id = %s AND user_id = %s",
+                (inventory_id, session["user_id"])
+            )
+            inventory = cur.fetchone()
+            
+            if type_filter:
+                cur.execute(
+                    "SELECT * FROM items WHERE inventory_id = %s AND type = %s",
+                    (inventory_id, type_filter)
+                )
+            else:
+                cur.execute(
+                    "SELECT * FROM items WHERE inventory_id = %s",
+                    (inventory_id,)
+                )
+            items = cur.fetchall()
         
     return render_template("inventory/view.html", 
                          inventories=inventories, 
@@ -231,16 +212,14 @@ def view_inventory(inventory_id):
                          items=items, 
                          type_filter=type_filter)
 
-# item handling
-
 @app.route("/inventory/<int:inventory_id>/add_item", methods=["POST"])
 @login_required
 def add_item(inventory_id):
-    # Get form data
     name = request.form.get("name")
     type = request.form.get("type")
     color = request.form.get("color")
     description = request.form.get("description")
+    
     if 'image' in request.files:
         file = request.files['image']
         if file and allowed_file(file.filename):
@@ -249,24 +228,23 @@ def add_item(inventory_id):
             image_url = f'/static/uploads/{filename}'
     else:
         image_url = request.form.get('image_url')
-    
 
-    # Verify inventory belongs to user
     with get_db() as db:
-        inventory = db.execute(
-            "SELECT * FROM inventories WHERE id = ? AND user_id = ?",
-            (inventory_id, session["user_id"])
-        ).fetchone()
-        
-        if inventory is None:
-            return redirect("/")
+        with db.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM inventories WHERE id = %s AND user_id = %s",
+                (inventory_id, session["user_id"])
+            )
+            inventory = cur.fetchone()
             
-        # Add the item
-        db.execute(
-            "INSERT INTO items (inventory_id, name, type, color, image_url, description) VALUES (?, ?, ?, ?, ?, ?)",
-            (inventory_id, name, type, color, image_url, description)
-        )
-        db.commit()
+            if inventory is None:
+                return redirect("/")
+                
+            cur.execute(
+                "INSERT INTO items (inventory_id, name, type, color, image_url, description) VALUES (%s, %s, %s, %s, %s, %s)",
+                (inventory_id, name, type, color, image_url, description)
+            )
+            db.commit()
 
     return redirect(f"/inventory/{inventory_id}")
 
@@ -280,11 +258,12 @@ def edit_item(inventory_id, item_id):
     description = request.form.get("description")
     
     with get_db() as db:
-        db.execute(
-            "UPDATE items SET name = ?, type = ?, color = ?, image_url = ?, description = ? WHERE id = ? AND inventory_id = ?",
-            (name, type, color, image_url, description, item_id, inventory_id)
-        )
-        db.commit()
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE items SET name = %s, type = %s, color = %s, image_url = %s, description = %s WHERE id = %s AND inventory_id = %s",
+                (name, type, color, image_url, description, item_id, inventory_id)
+            )
+            db.commit()
     
     return redirect(f"/inventory/{inventory_id}")
 
@@ -292,18 +271,18 @@ def edit_item(inventory_id, item_id):
 @login_required
 def duplicate_item(inventory_id, item_id):
     with get_db() as db:
-        # Get original item
-        item = db.execute(
-            "SELECT * FROM items WHERE id = ? AND inventory_id = ?",
-            (item_id, inventory_id)
-        ).fetchone()
-        
-        # Create duplicate with image_url included
-        db.execute(
-            "INSERT INTO items (inventory_id, name, type, color, image_url, description) VALUES (?, ?, ?, ?, ?, ?)",
-            (inventory_id, item['name'], item['type'], item['color'], item['image_url'], item['description'])
-        )
-        db.commit()
+        with db.cursor() as cur:
+            cur.execute(
+                "SELECT * FROM items WHERE id = %s AND inventory_id = %s",
+                (item_id, inventory_id)
+            )
+            item = cur.fetchone()
+            
+            cur.execute(
+                "INSERT INTO items (inventory_id, name, type, color, image_url, description) VALUES (%s, %s, %s, %s, %s, %s)",
+                (inventory_id, item['name'], item['type'], item['color'], item['image_url'], item['description'])
+            )
+            db.commit()
     
     return redirect(f"/inventory/{inventory_id}")
 
@@ -311,7 +290,14 @@ def duplicate_item(inventory_id, item_id):
 @login_required
 def delete_item(inventory_id, item_id):
     with get_db() as db:
-        db.execute("DELETE FROM items WHERE id = ? AND inventory_id = ?", (item_id, inventory_id))
-        db.commit()
+        with db.cursor() as cur:
+            cur.execute(
+                "DELETE FROM items WHERE id = %s AND inventory_id = %s", 
+                (item_id, inventory_id)
+            )
+            db.commit()
     
     return redirect(f"/inventory/{inventory_id}")
+
+if __name__ == "__main__":
+    app.run(debug=True)
