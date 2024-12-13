@@ -7,11 +7,16 @@ from psycopg2.extras import DictCursor
 from functools import wraps
 from bs4 import BeautifulSoup
 import requests
+from googleapiclient.discovery import build
+
 
 # Configure application
 app = Flask(__name__)
 app.secret_key = 'dev'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
+GOOGLE_API_KEY = os.getenv('AIzaSyB_GqXxJIOY35FpcRSkg1YRMihZtYb1QIo')
+SEARCH_ENGINE_ID = os.getenv('0612f18a96e7a4b78')
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
@@ -314,29 +319,26 @@ def delete_item(inventory_id, item_id):
 @login_required
 def search_product_images():
     data = request.get_json()
-    website_url = data.get("website_url")
+    query = data.get("product_name")
     
     try:
-        # Fetch the webpage
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
-        response = requests.get(website_url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        # Create a service object for the API
+        service = build("customsearch", "v1", developerKey=GOOGLE_API_KEY)
         
-        # Find all image elements
-        images = []
-        for img in soup.find_all('img'):
-            src = img.get('src')
-            if src:
-                # Convert relative URLs to absolute
-                if not src.startswith(('http://', 'https://')):
-                    src = requests.compat.urljoin(website_url, src)
-                # Filter out small icons and logos
-                if src.endswith(('.jpg', '.jpeg', '.png', '.webp')):
-                    images.append(src)
+        # Execute the search
+        result = service.cse().list(
+            q=query,
+            cx=SEARCH_ENGINE_ID,
+            searchType='image',
+            num=12
+        ).execute()
+        
+        # Extract image URLs
+        images = [item['link'] for item in result.get('items', [])]
         
         return jsonify({
             'success': True,
-            'images': images[:12]  # Limit to first 12 images
+            'images': images
         })
     except Exception as e:
         return jsonify({
