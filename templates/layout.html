@@ -55,9 +55,9 @@
                     <!-- Inventories List -->
                     <div class="d-flex flex-column">
                         {% for inventory in inventories %}
-                            <button class="btn btn-outline-secondary inventory-btn">
+                            <a href="/inventory/{{ inventory.id }}" class="btn btn-outline-secondary inventory-btn">
                                 {{ inventory.name }}
-                            </button>
+                            </a>
                         {% endfor %}
                     </div>
                 </div>
