@@ -28,7 +28,7 @@ def allowed_file(filename):
 
 # Database helper function
 def get_db():
-    DATABASE_URL = os.environ.get('DATABASE_URL')
+    DATABASE_URL = os.environ.get('DATABASE_URL',     client_encoding='UTF8')
     conn = psycopg2.connect(DATABASE_URL)
     conn.cursor_factory = DictCursor
     return conn
@@ -319,27 +319,53 @@ def delete_item(inventory_id, item_id):
 @login_required
 def search_product_images():
     data = request.get_json()
-    query = data.get("product_name")
+    product_name = data.get("product_name")
+    website_url = data.get("website_url")
     
     try:
-        # Create a service object for the API
-        service = build("customsearch", "v1", developerKey=GOOGLE_API_KEY)
+        images = []
+        if website_url:
+            # Handle direct URL
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+            response = requests.get(website_url, headers=headers)
+            soup = BeautifulSoup(response.text, 'html.parser')
+            
+            # Find product images (common patterns in e-commerce sites)
+            img_elements = soup.find_all('img', {
+                'class': lambda x: x and any(term in x.lower() 
+                    for term in ['product', 'main', 'gallery', 'primary'])
+            })
+            
+            for img in img_elements:
+                src = img.get('src') or img.get('data-src')
+                if src:
+                    if not src.startswith(('http://', 'https://')):
+                        src = requests.compat.urljoin(website_url, src)
+                    if any(ext in src.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+                        images.append(src)
         
-        # Execute the search
-        result = service.cse().list(
-            q=query,
-            cx=SEARCH_ENGINE_ID,
-            searchType='image',
-            num=12
-        ).execute()
-        
-        # Extract image URLs
-        images = [item['link'] for item in result.get('items', [])]
+        if product_name:
+            # Use Google Custom Search API
+            service = build("customsearch", "v1", developerKey=GOOGLE_API_KEY)
+            result = service.cse().list(
+                q=f"{product_name} product image",
+                cx=SEARCH_ENGINE_ID,
+                searchType='image',
+                num=8,
+                imgType='product',
+                safe='active'
+            ).execute()
+            
+            api_images = [item['link'] for item in result.get('items', [])]
+            images.extend(api_images)
         
         return jsonify({
             'success': True,
-            'images': images
+            'images': list(set(images[:12]))  # Remove duplicates and limit to 12 images
         })
+        
     except Exception as e:
         return jsonify({
             'success': False,
