@@ -55,6 +55,8 @@ with get_db() as conn:
                 inventory_id INTEGER NOT NULL REFERENCES inventories(id),
                 name TEXT NOT NULL,
                 type TEXT NOT NULL,
+                subtype TEXT,
+                size TEXT,
                 color TEXT NOT NULL,
                 image_url TEXT,
                 description TEXT,
@@ -96,13 +98,11 @@ def register():
         
         with get_db() as db:
             with db.cursor() as cur:
-                # Check if username exists
                 cur.execute("SELECT * FROM users WHERE username = %s", (username,))
                 if cur.fetchone():
                     flash("Username already exists")
                     return redirect("/register")
                 
-                # Insert new user
                 cur.execute(
                     "INSERT INTO users (username, hash) VALUES (%s, %s)",
                     (username, generate_password_hash(password))
@@ -220,9 +220,11 @@ def view_inventory(inventory_id):
 def add_item(inventory_id):
     name = request.form.get("name")
     type = request.form.get("type")
+    subtype = request.form.get("subtype")
+    size = request.form.get("size")
     color = request.form.get("color")
     description = request.form.get("description")
-    image_url = None  # Initialize with default value
+    image_url = None
     
     if 'image' in request.files:
         file = request.files['image']
@@ -245,8 +247,8 @@ def add_item(inventory_id):
                 return redirect("/")
                 
             cur.execute(
-                "INSERT INTO items (inventory_id, name, type, color, image_url, description) VALUES (%s, %s, %s, %s, %s, %s)",
-                (inventory_id, name, type, color, image_url, description)
+                "INSERT INTO items (inventory_id, name, type, subtype, size, color, image_url, description) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (inventory_id, name, type, subtype, size, color, image_url, description)
             )
             db.commit()
 
@@ -257,6 +259,8 @@ def add_item(inventory_id):
 def edit_item(inventory_id, item_id):
     name = request.form.get("name")
     type = request.form.get("type")
+    subtype = request.form.get("subtype")
+    size = request.form.get("size")
     color = request.form.get("color")
     image_url = request.form.get("image_url")
     description = request.form.get("description")
@@ -264,8 +268,8 @@ def edit_item(inventory_id, item_id):
     with get_db() as db:
         with db.cursor() as cur:
             cur.execute(
-                "UPDATE items SET name = %s, type = %s, color = %s, image_url = %s, description = %s WHERE id = %s AND inventory_id = %s",
-                (name, type, color, image_url, description, item_id, inventory_id)
+                "UPDATE items SET name = %s, type = %s, subtype = %s, size = %s, color = %s, image_url = %s, description = %s WHERE id = %s AND inventory_id = %s",
+                (name, type, subtype, size, color, image_url, description, item_id, inventory_id)
             )
             db.commit()
     
@@ -283,8 +287,8 @@ def duplicate_item(inventory_id, item_id):
             item = cur.fetchone()
             
             cur.execute(
-                "INSERT INTO items (inventory_id, name, type, color, image_url, description) VALUES (%s, %s, %s, %s, %s, %s)",
-                (inventory_id, item['name'], item['type'], item['color'], item['image_url'], item['description'])
+                "INSERT INTO items (inventory_id, name, type, subtype, size, color, image_url, description) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                (inventory_id, item['name'], item['type'], item['subtype'], item['size'], item['color'], item['image_url'], item['description'])
             )
             db.commit()
     
@@ -295,16 +299,11 @@ def duplicate_item(inventory_id, item_id):
 def delete_item(inventory_id, item_id):
     with get_db() as db:
         with db.cursor() as cur:
-            # First verify the item belongs to the user's inventory
-            cur.execute("""
-                SELECT i.* FROM items i 
-                JOIN inventories inv ON i.inventory_id = inv.id 
-                WHERE i.id = %s AND inv.user_id = %s
-            """, (item_id, session["user_id"]))
-            
-            if cur.fetchone():
-                cur.execute("DELETE FROM items WHERE id = %s", (item_id,))
-                db.commit()
+            cur.execute(
+                "DELETE FROM items WHERE id = %s AND inventory_id = %s", 
+                (item_id, inventory_id)
+            )
+            db.commit()
     
     return redirect(f"/inventory/{inventory_id}")
 
