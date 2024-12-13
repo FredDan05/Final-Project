@@ -19,13 +19,8 @@ def allowed_file(filename):
 
 # Database helper function
 def get_db():
-    conn = psycopg2.connect(
-        dbname="digitalcloset",
-        user="postgres",
-        password="rqgbqfmq",  # Use the password you set during PostgreSQL installation
-        host="localhost",
-        port="5432"
-    )
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(DATABASE_URL)
     conn.cursor_factory = DictCursor
     return conn
 
