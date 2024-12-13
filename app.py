@@ -28,8 +28,8 @@ def allowed_file(filename):
 
 # Database helper function
 def get_db():
-    DATABASE_URL = os.environ.get('DATABASE_URL',     client_encoding='UTF8')
-    conn = psycopg2.connect(DATABASE_URL)
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(DATABASE_URL, client_encoding='UTF8')
     conn.cursor_factory = DictCursor
     return conn
 
