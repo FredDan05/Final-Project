@@ -224,78 +224,82 @@
     </div>
 </div>
 
+
+
 <script>
-const subtypes = {
-    shirt: ['T-Shirt', 'Buttoned', 'Sweatshirt', 'Hoodie'],
-    pants: ['Jeans', 'Chinos', 'Sweatpants', 'Shorts']
-};
-
-function updateSubtypes(typeSelect) {
-    const form = typeSelect.closest('form');
-    const subtypeContainer = form.querySelector('.subtypeContainer');
-    const subtypeSelect = form.querySelector('.itemSubtype');
+    const subtypes = {
+        shirt: ['T-Shirt', 'Buttoned', 'Sweatshirt', 'Hoodie'],
+        pants: ['Jeans', 'Chinos', 'Sweatpants', 'Shorts']
+    };
     
-    if (typeSelect.value === 'shirt' || typeSelect.value === 'pants') {
-        subtypeSelect.innerHTML = subtypes[typeSelect.value]
-            .map(type => `<option value="${type}">${type}</option>`)
-            .join('');
-        subtypeContainer.style.display = 'block';
-    } else {
-        subtypeContainer.style.display = 'none';
-    }
-}
-
-document.querySelectorAll('.itemType').forEach(select => {
-    select.addEventListener('change', (e) => updateSubtypes(e.target));
-    // Initialize subtypes for pre-selected values
-    if (select.value === 'shirt' || select.value === 'pants') {
-        updateSubtypes(select);
-    }
-});
-
-async function searchImages() {
-    const productName = document.getElementById('productName').value;
-    const websiteUrl = document.getElementById('websiteUrl').value;
-    const resultsContainer = document.getElementById('imageResults');
-    
-    resultsContainer.innerHTML = '<div class="col-12 text-center">Searching...</div>';
-    
-    try {
-        const response = await fetch('/search_product_images', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                product_name: productName,
-                website_url: websiteUrl
-            })
-        });
+    function updateSubtypes(typeSelect) {
+        const form = typeSelect.closest('form');
+        const subtypeContainer = form.querySelector('.subtypeContainer');
+        const subtypeSelect = form.querySelector('.itemSubtype');
         
-        const data = await response.json();
+        if (typeSelect.value === 'shirt' || typeSelect.value === 'pants') {
+            subtypeSelect.innerHTML = subtypes[typeSelect.value]
+                .map(type => `<option value="${type}">${type}</option>`)
+                .join('');
+            subtypeContainer.style.display = 'block';
+        } else {
+            subtypeContainer.style.display = 'none';
+        }
+    }
+    
+    async function searchImages() {
+        const productName = document.getElementById('productName').value;
+        const resultsContainer = document.getElementById('imageResults');
         
-        resultsContainer.innerHTML = data.images.map(imageUrl => `
-            <div class="col">
-                <div class="card h-100">
-                    <img src="${imageUrl}" class="card-img-top" alt="Product image">
-                    <div class="card-body">
-                        <button class="btn btn-sm btn-primary w-100" onclick="selectImage('${imageUrl}')" data-bs-dismiss="modal">
-                            Select Image
-                        </button>
+        resultsContainer.innerHTML = '<div class="col-12 text-center">Searching...</div>';
+        
+        try {
+            const response = await fetch('/search_product_images', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    product_name: productName
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success && data.images.length > 0) {
+                resultsContainer.innerHTML = data.images.map(imageUrl => `
+                    <div class="col">
+                        <div class="card h-100">
+                            <img src="${imageUrl}" class="card-img-top" alt="Product image">
+                            <div class="card-body">
+                                <button class="btn btn-sm btn-primary w-100" onclick="selectImage('${imageUrl}')" data-bs-dismiss="modal">
+                                    Select Image
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-            </div>
-        `).join('');
-    } catch (error) {
-        resultsContainer.innerHTML = '<div class="col-12 text-center text-danger">Error fetching images</div>';
+                `).join('');
+            } else {
+                resultsContainer.innerHTML = '<div class="col-12 text-center">No images found</div>';
+            }
+        } catch (error) {
+            console.error('Search error:', error);
+            resultsContainer.innerHTML = '<div class="col-12 text-center text-danger">Error fetching images</div>';
+        }
     }
-}
-
-function selectImage(imageUrl) {
-    // Find the active modal (either new item or edit item)
-    const activeModal = document.querySelector('.modal.show');
-    const imageUrlInput = activeModal.querySelector('input[name="image_url"]');
-    imageUrlInput.value = imageUrl;
-}
-</script>
+    
+    function selectImage(imageUrl) {
+        const activeModal = document.querySelector('.modal.show');
+        const imageUrlInput = activeModal.querySelector('input[name="image_url"]');
+        imageUrlInput.value = imageUrl;
+    }
+    
+    // Initialize subtypes for pre-selected values
+    document.querySelectorAll('.itemType').forEach(select => {
+        select.addEventListener('change', (e) => updateSubtypes(e.target));
+        if (select.value === 'shirt' || select.value === 'pants') {
+            updateSubtypes(select);
+        }
+    });
+    </script>
 {% endblock %}
