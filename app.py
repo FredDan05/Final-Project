@@ -219,6 +219,7 @@ def add_item(inventory_id):
     type = request.form.get("type")
     color = request.form.get("color")
     description = request.form.get("description")
+    image_url = None  # Initialize with default value
     
     if 'image' in request.files:
         file = request.files['image']
@@ -226,7 +227,7 @@ def add_item(inventory_id):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             image_url = f'/static/uploads/{filename}'
-    else:
+    elif request.form.get('image_url'):
         image_url = request.form.get('image_url')
 
     with get_db() as db:
