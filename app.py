@@ -1,15 +1,21 @@
 import os
 from flask import Flask, flash, redirect, render_template, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
+from werkzeug.utils import secure_filename
 import psycopg2
 from psycopg2.extras import DictCursor
 from functools import wraps
 
-
-
 # Configure application
 app = Flask(__name__)
 app.secret_key = 'dev'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 # Database helper function
 def get_db():
@@ -239,8 +245,16 @@ def add_item(inventory_id):
     name = request.form.get("name")
     type = request.form.get("type")
     color = request.form.get("color")
-    image_url = request.form.get("image_url")
     description = request.form.get("description")
+    if 'image' in request.files:
+        file = request.files['image']
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            image_url = f'/static/uploads/{filename}'
+    else:
+        image_url = request.form.get('image_url')
+    
 
     # Verify inventory belongs to user
     with get_db() as db:
@@ -289,10 +303,10 @@ def duplicate_item(inventory_id, item_id):
             (item_id, inventory_id)
         ).fetchone()
         
-        # Create duplicate
+        # Create duplicate with image_url included
         db.execute(
-            "INSERT INTO items (inventory_id, name, type, color, description) VALUES (?, ?, ?, ?, ?)",
-            (inventory_id, item['name'], item['type'], item['color'], item['description'])
+            "INSERT INTO items (inventory_id, name, type, color, image_url, description) VALUES (?, ?, ?, ?, ?, ?)",
+            (inventory_id, item['name'], item['type'], item['color'], item['image_url'], item['description'])
         )
         db.commit()
     
