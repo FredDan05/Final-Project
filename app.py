@@ -1,56 +1,64 @@
 import os
 from flask import Flask, flash, redirect, render_template, request, session
 from werkzeug.security import check_password_hash, generate_password_hash
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 from functools import wraps
+
+
 
 # Configure application
 app = Flask(__name__)
-app.secret_key = 'dev'  # Change this to a real secret key in production
+app.secret_key = 'dev'
 
 # Database helper function
 def get_db():
-    db = sqlite3.connect('database/digitalcloset.db')
-    db.row_factory = sqlite3.Row
-    return db
-
-# Initialize database and create users table
-with get_db() as db:
-    db.execute('''
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            username TEXT UNIQUE NOT NULL,
-            hash TEXT NOT NULL
-        )
-    ''')
-
-    # Inventories table
-    db.execute('''
-        CREATE TABLE IF NOT EXISTS inventories (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER NOT NULL,
-            name TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users(id)
-        )
-    ''')
-    
-    # Items table
-    db.execute('''
-    CREATE TABLE IF NOT EXISTS items (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        inventory_id INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        type TEXT NOT NULL,
-        color TEXT NOT NULL,
-        image_url TEXT,
-        description TEXT,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY (inventory_id) REFERENCES inventories(id)
+    conn = psycopg2.connect(
+        dbname="digitalcloset",
+        user="postgres",
+        password="rqgbqfmq",  # Use the password you set during PostgreSQL installation
+        host="localhost",
+        port="5432"
     )
-    ''')
+    conn.cursor_factory = DictCursor
+    return conn
 
-    db.commit()
+# Initialize database and create tables
+with get_db() as conn:
+    with conn.cursor() as cur:
+        # Users table
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                username TEXT UNIQUE NOT NULL,
+                hash TEXT NOT NULL
+            )
+        ''')
+        
+        # Inventories table
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS inventories (
+                id SERIAL PRIMARY KEY,
+                user_id INTEGER NOT NULL REFERENCES users(id),
+                name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
+        # Items table
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS items (
+                id SERIAL PRIMARY KEY,
+                inventory_id INTEGER NOT NULL REFERENCES inventories(id),
+                name TEXT NOT NULL,
+                type TEXT NOT NULL,
+                color TEXT NOT NULL,
+                image_url TEXT,
+                description TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        conn.commit()
 
 # End of database stuff
 
