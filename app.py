@@ -8,18 +8,19 @@ from functools import wraps
 from bs4 import BeautifulSoup
 import requests
 from googleapiclient.discovery import build
-
+import logging
 
 # Configure application
 app = Flask(__name__)
-app.secret_key = 'dev'
+app.secret_key = os.urandom(24)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-GOOGLE_API_KEY = os.getenv('AIzaSyB_GqXxJIOY35FpcRSkg1YRMihZtYb1QIo')
-SEARCH_ENGINE_ID = os.getenv('0612f18a96e7a4b78')
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
+# API Configuration
+GOOGLE_API_KEY = 'YOUR_API_KEY'
+SEARCH_ENGINE_ID = 'YOUR_SEARCH_ENGINE_ID'
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
 
@@ -32,6 +33,7 @@ def get_db():
     conn = psycopg2.connect(DATABASE_URL, client_encoding='UTF8')
     conn.cursor_factory = DictCursor
     return conn
+
 
 # Initialize database and create tables
 with get_db() as conn:
@@ -318,59 +320,69 @@ def delete_item(inventory_id, item_id):
 @app.route("/search_product_images", methods=["POST"])
 @login_required
 def search_product_images():
-    data = request.get_json()
-    product_name = data.get("product_name")
-    website_url = data.get("website_url")
-    
     try:
+        data = request.get_json()
+        product_name = data.get("product_name", "")
+        website_url = data.get("website_url", "")
+        
         images = []
+        
+        # Handle direct URL input
         if website_url:
-            # Handle direct URL
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-            }
-            response = requests.get(website_url, headers=headers)
-            soup = BeautifulSoup(response.text, 'html.parser')
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+                response = requests.get(website_url, headers=headers, timeout=5)
+                soup = BeautifulSoup(response.text, 'html.parser')
+                
+                # Find product images
+                img_elements = soup.find_all('img', {
+                    'class': lambda x: x and any(term in x.lower() 
+                        for term in ['product', 'main', 'gallery', 'primary'])
+                })
+                
+                for img in img_elements:
+                    src = img.get('src') or img.get('data-src')
+                    if src:
+                        if not src.startswith(('http://', 'https://')):
+                            src = requests.compat.urljoin(website_url, src)
+                        if any(ext in src.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
+                            images.append(src)
             
-            # Find product images (common patterns in e-commerce sites)
-            img_elements = soup.find_all('img', {
-                'class': lambda x: x and any(term in x.lower() 
-                    for term in ['product', 'main', 'gallery', 'primary'])
-            })
-            
-            for img in img_elements:
-                src = img.get('src') or img.get('data-src')
-                if src:
-                    if not src.startswith(('http://', 'https://')):
-                        src = requests.compat.urljoin(website_url, src)
-                    if any(ext in src.lower() for ext in ['.jpg', '.jpeg', '.png', '.webp']):
-                        images.append(src)
+            except requests.RequestException as e:
+                logging.error(f"URL fetch error: {str(e)}")
+                return jsonify({'success': False, 'error': 'Failed to fetch URL'}), 400
         
+        # Handle product name search
         if product_name:
-            # Use Google Custom Search API
-            service = build("customsearch", "v1", developerKey=GOOGLE_API_KEY)
-            result = service.cse().list(
-                q=f"{product_name} product image",
-                cx=SEARCH_ENGINE_ID,
-                searchType='image',
-                num=8,
-                imgType='product',
-                safe='active'
-            ).execute()
-            
-            api_images = [item['link'] for item in result.get('items', [])]
-            images.extend(api_images)
+            try:
+                service = build("customsearch", "v1", developerKey=GOOGLE_API_KEY)
+                result = service.cse().list(
+                    q=f"{product_name} product image",
+                    cx=SEARCH_ENGINE_ID,
+                    searchType='image',
+                    num=8,
+                    imgType='product',
+                    safe='active'
+                ).execute()
+                
+                api_images = [item['link'] for item in result.get('items', [])]
+                images.extend(api_images)
+                
+            except Exception as e:
+                logging.error(f"Google API error: {str(e)}")
+                return jsonify({'success': False, 'error': 'Image search failed'}), 400
         
+        # Return unique images
+        unique_images = list(dict.fromkeys(images))[:12]
         return jsonify({
             'success': True,
-            'images': list(set(images[:12]))  # Remove duplicates and limit to 12 images
+            'images': unique_images
         })
         
     except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': str(e)
-        }), 400
+        logging.error(f"General error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Server error'}), 500
+
 
 
 if __name__ == "__main__":
