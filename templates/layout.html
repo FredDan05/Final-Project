@@ -79,16 +79,19 @@
             {% else %}
                 <!-- Non-authenticated view -->
                 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                    <div class="container-fluid">
+                    <div class="container-fluid d-flex justify-content-between">
+                        <div style="width: 200px"><!-- Left spacer --></div>
+                        
                         <div class="navbar-brand text-center mx-auto">
                             <a class="text-decoration-none" href="/">
                                 <h3 class="mb-0">Digital Closet</h3>
                                 <small class="text-muted">Organize Your Wardrobe, Simplify Your Life</small>
                             </a>
                         </div>
-                        <div class="d-flex align-items-center">
-                            <a class="btn btn-outline-primary me-3 px-4" href="/login">Sign In</a>
-                            <a class="btn btn-primary px-4" href="/register">Register</a>
+                        
+                        <div class="d-flex" style="width: 200px">
+                            <a class="btn btn-outline-primary me-3" href="/login">Sign In</a>
+                            <a class="btn btn-primary" href="/register">Register</a>
                         </div>
                     </div>
                 </nav>
