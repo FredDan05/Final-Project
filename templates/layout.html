@@ -106,34 +106,33 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- Content Area with block main -->
-                    <div class="content-area">
-                        {% block main %}{% endblock %}
-                    </div>
-                </div>              {% else %}
-                  <!-- Non-authenticated view -->
-                  <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                      <div class="container-fluid">
-                          <div class="w-100 d-flex justify-content-between align-items-center">
-                              <div class="flex-grow-1"></div>
-                              <div class="navbar-brand text-center">
-                                  <a class="text-decoration-none" href="/">
-                                      <h3 class="mb-0">Digital Closet</h3>
-                                      <small class="text-muted">Organize Your Wardrobe, Simplify Your Life</small>
-                                  </a>
-                              </div>
-                              <div class="d-flex justify-content-end flex-grow-1">
-                                  <a class="btn btn-outline-primary me-3" href="/login">Sign In</a>
-                                  <a class="btn btn-primary" href="/register">Register</a>
-                              </div>
-                          </div>
-                      </div>
-                  </nav>
-              {% endif %}
-          </div>
-      </div>
 
+                </div>
+            {% else %}
+                <!-- Non-authenticated view -->
+                <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                    <div class="container-fluid">
+                        <div class="w-100 d-flex justify-content-between align-items-center">
+                            <div class="flex-grow-1"></div>
+                            <div class="navbar-brand text-center">
+                                <a class="text-decoration-none" href="/">
+                                    <h3 class="mb-0">Digital Closet</h3>
+                                    <small class="text-muted">Organize Your Wardrobe, Simplify Your Life</small>
+                                </a>
+                            </div>
+                            <div class="d-flex justify-content-end flex-grow-1">
+                                <a class="btn btn-outline-primary me-3" href="/login">Sign In</a>
+                                <a class="btn btn-primary" href="/register">Register</a>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+            {% endif %}
+            <div class="content-area">
+                {% block main %}{% endblock %}
+            </div>
+        </div>
+    </div>
       <!-- Modal for new inventory -->
       {% if session.get("user_id") %}
       <div class="modal fade" id="newInventoryModal" tabindex="-1">
