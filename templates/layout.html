@@ -91,7 +91,6 @@
                 <div class="main-container">
                     <div class="top-nav">
                         <div class="container-fluid h-100 d-flex align-items-center justify-content-between px-4">
-                            <!-- Top nav content -->
                             <div class="d-flex align-items-center">
                                 <h3 class="mb-0">
                                     {% if inventory %}
@@ -102,32 +101,17 @@
                                 </h3>
                             </div>
                             
-                            <!-- Content Area -->
                             <div class="d-flex align-items-center gap-3">
-                                <div class="input-group" style="width: 300px;">
-                                    <input type="text" class="form-control" placeholder="Search items...">
-                                    <button class="btn btn-outline-secondary">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
-                                
-                                <div class="d-flex gap-3">
-                                    <button class="btn btn-light">
-                                        <i class="fas fa-bell"></i>
-                                    </button>
-                                    <button class="btn btn-light">
-                                        <i class="fas fa-user"></i>
-                                    </button>
-                                </div>
+                                <!-- Top nav content -->
                             </div>
                         </div>
                     </div>
-                </div>
-                  <!-- Single block main for both views -->
-                  <div class="{% if session.get('user_id') %}content-area{% else %}container mt-4{% endif %}">
-                      {% block main %}{% endblock %}
-                  </div>
-              {% else %}
+                    
+                    <!-- Content Area with block main -->
+                    <div class="content-area">
+                        {% block main %}{% endblock %}
+                    </div>
+                </div>              {% else %}
                   <!-- Non-authenticated view -->
                   <nav class="navbar navbar-expand-lg navbar-light bg-light">
                       <div class="container-fluid">
