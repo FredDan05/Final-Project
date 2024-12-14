@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "auth_layout.html" %}
 
 {% block main %}
 <div class="container px-4 d-flex justify-content-center align-items-center" style="min-height: 100vh;">
@@ -10,7 +10,6 @@
                 name="username" 
                 placeholder="Username"
                 required
-                autofocus
                 autocomplete="off">
         </div>
         
@@ -20,8 +19,7 @@
                 class="form-control form-control-lg" 
                 name="password" 
                 placeholder="Password"
-                required
-                minlength="3">
+                required>
         </div>
 
         <div class="mb-3">
@@ -29,9 +27,8 @@
                 type="password" 
                 class="form-control form-control-lg" 
                 name="confirmation" 
-                placeholder="Retype Password"
-                required
-                minlength="3">
+                placeholder="Confirm Password"
+                required>
         </div>
 
         <button type="submit" class="btn btn-primary btn-lg w-100">Register</button>
