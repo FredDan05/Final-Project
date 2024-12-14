@@ -1,0 +1,65 @@
+.sidebar {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 240px;
+    height: 100vh;
+    z-index: 1000;
+}
+
+.nav-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-items {
+    flex-grow: 1;
+}
+
+.home-link {
+    color: black;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.inventory-btn {
+    width: 100%;
+    text-align: left;
+    margin: 4px 0;
+}
+
+.main-container {
+    margin-left: 240px;
+    width: calc(100% - 240px);
+    min-height: 100vh;
+    position: relative;
+}
+
+.top-nav {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: calc(100% - 240px);
+    height: 64px;
+    background-color: white;
+    border-bottom: 1px solid #dee2e6;
+    z-index: 900;
+}
+
+.content-area {
+    margin-top: 64px;
+    padding: 2rem;
+    width: 100%;
+    min-height: calc(100vh - 64px);
+    overflow-y: auto;
+}
+
+.auth-buttons {
+    position: absolute;
+    right: 2rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
