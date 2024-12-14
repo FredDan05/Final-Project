@@ -51,7 +51,7 @@
 
 .content-area {
     margin-top: 64px;
-    padding: 2rem;
+    padding: 1rem 2rem;
     width: 100%;
     min-height: calc(100vh - 64px);
     overflow-y: auto;
@@ -62,4 +62,11 @@
     right: 2rem;
     top: 50%;
     transform: translateY(-50%);
+}
+
+.brand-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
 }
