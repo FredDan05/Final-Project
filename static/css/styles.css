@@ -76,3 +76,21 @@
     top: 50%;
     transform: translateY(-50%);
 }
+
+.auth-navbar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    background-color: white;
+    border-bottom: 1px solid #dee2e6;
+    z-index: 1000;
+}
+
+.auth-content {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+}
