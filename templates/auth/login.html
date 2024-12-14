@@ -1,38 +1,28 @@
-{% extends "layout.html" %}
+{% extends "auth_layout.html" %}
 
 {% block main %}
-<div class="container px-4 d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="card shadow-sm" style="max-width: 400px; width: 100%;">
-        <div class="card-body p-4">
-            <h3 class="text-center mb-4">Digital Closet</h3>
-            
-            <form action="/login" method="post">
-                <div class="mb-3">
-                    <input 
-                        type="text" 
-                        class="form-control" 
-                        name="username" 
-                        placeholder="Username"
-                        required
-                        autocomplete="off">
-                </div>
-                
-                <div class="mb-4">
-                    <input 
-                        type="password" 
-                        class="form-control" 
-                        name="password" 
-                        placeholder="Password"
-                        required>
-                </div>
-
-                <button type="submit" class="btn btn-primary w-100">Log in</button>
-            </form>
-
-            <div class="text-center mt-3">
-                <a href="/register" class="text-decoration-none">Don't have an account yet? Sign up here!</a>
-            </div>
+<div class="container px-4 d-flex justify-content-center align-items-center" style="min-height: 100vh;">
+    <form action="/login" method="post" class="w-100" style="max-width: 330px;">
+        <div class="mb-3">
+            <input 
+                type="text" 
+                class="form-control form-control-lg" 
+                name="username" 
+                placeholder="Username"
+                required
+                autocomplete="off">
         </div>
-    </div>
+        
+        <div class="mb-3">
+            <input 
+                type="password" 
+                class="form-control form-control-lg" 
+                name="password" 
+                placeholder="Password"
+                required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg w-100">Log In</button>
+    </form>
 </div>
 {% endblock %}

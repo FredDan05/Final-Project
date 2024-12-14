@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Closet</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <div class="w-100 position-relative">
+                <div class="brand-center">
+                    <a class="text-decoration-none" href="/">
+                        <h3 class="mb-0">Digital Closet</h3>
+                        <small class="text-muted">Organize Your Wardrobe, Simplify Your Life</small>
+                    </a>
+                </div>
+                <div class="auth-buttons">
+                    <a class="btn btn-outline-primary me-3" href="/login">Sign In</a>
+                    <a class="btn btn-primary" href="/register">Register</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-5">
+        {% block main %}{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
