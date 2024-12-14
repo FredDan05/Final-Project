@@ -35,6 +35,19 @@
         .main-container {
             margin-left: 240px;
             width: calc(100% - 240px);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .top-nav {
+            height: 15vh;
+            background-color: white;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .content-area {
+            height: 85vh;
+            overflow-y: auto;
+            padding: 2rem;
         }
     </style>
 </head>
@@ -76,30 +89,38 @@
 
                 <!-- Main content -->
                 <div class="main-container">
-            {% else %}
-                <!-- Non-authenticated view -->
-                <nav class="navbar navbar-expand-lg navbar-light bg-light">
-                    <div class="container-fluid d-flex justify-content-between">
-                        <div style="width: 200px"><!-- Left spacer --></div>
-                        
-                        <div class="navbar-brand text-center mx-auto">
-                            <a class="text-decoration-none" href="/">
-                                <h3 class="mb-0">Digital Closet</h3>
-                                <small class="text-muted">Organize Your Wardrobe, Simplify Your Life</small>
-                            </a>
+                    <!-- Top Navigation -->
+                    <div class="top-nav">
+                        <!-- Content for top nav will go here -->
+                    </div>
+                    
+                    <!-- Content Area -->
+                    <div class="content-area">
+                        {% block main %}{% endblock %}
+                    </div>
+                </div>
+                {% else %}
+                    <!-- Non-authenticated view -->
+                    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                        <div class="container-fluid d-flex justify-content-between">
+                            <div style="width: 200px"><!-- Left spacer --></div>
+                            
+                            <div class="navbar-brand text-center mx-auto">
+                                <a class="text-decoration-none" href="/">
+                                    <h3 class="mb-0">Digital Closet</h3>
+                                    <small class="text-muted">Organize Your Wardrobe, Simplify Your Life</small>
+                                </a>
+                            </div>
+                            
+                            <div class="d-flex" style="width: 200px">
+                                <a class="btn btn-outline-primary me-3" href="/login">Sign In</a>
+                                <a class="btn btn-primary" href="/register">Register</a>
+                            </div>
                         </div>
-                        
-                        <div class="d-flex" style="width: 200px">
-                            <a class="btn btn-outline-primary me-3" href="/login">Sign In</a>
-                            <a class="btn btn-primary" href="/register">Register</a>
+                    </nav>
+                {% endif %}
                         </div>
                     </div>
-                </nav>
-            {% endif %}
-                {% block main %}{% endblock %}
-            </div>
-        </div>
-    </div>
 
     <!-- Modal for new inventory -->
     {% if session.get("user_id") %}
