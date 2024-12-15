@@ -9,6 +9,8 @@ from bs4 import BeautifulSoup
 import requests
 from googleapiclient.discovery import build
 import logging
+import cloudinary
+import cloudinary.uploader
 
 # Configure application
 app = Flask(__name__)
@@ -17,6 +19,12 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
 if not os.path.exists(app.config['UPLOAD_FOLDER']):
     os.makedirs(app.config['UPLOAD_FOLDER'])
+
+cloudinary.config(
+    cloud_name = "dhyw9qsl9",
+    api_key = "533694876492848",
+    api_secret = "47Wr1YJxHcSWx6lEXbkq3P52t78"
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -72,8 +80,8 @@ with get_db() as conn:
                 color TEXT NOT NULL,
                 image_url TEXT,
                 description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+                wear_status INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP            )
         ''')
         conn.commit()
 
@@ -241,9 +249,9 @@ def add_item(inventory_id):
     if 'image' in request.files:
         file = request.files['image']
         if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            image_url = f'/static/uploads/{filename}'
+            # Upload to Cloudinary
+            result = cloudinary.uploader.upload(file)
+            image_url = result['secure_url']
     elif request.form.get('image_url'):
         image_url = request.form.get('image_url')
 
@@ -264,27 +272,6 @@ def add_item(inventory_id):
             )
             db.commit()
 
-    return redirect(f"/inventory/{inventory_id}")
-
-@app.route("/inventory/<int:inventory_id>/edit_item/<int:item_id>", methods=["POST"])
-@login_required
-def edit_item(inventory_id, item_id):
-    name = request.form.get("name")
-    type = request.form.get("type")
-    subtype = request.form.get("subtype")
-    size = request.form.get("size")
-    color = request.form.get("color")
-    image_url = request.form.get("image_url")
-    description = request.form.get("description")
-    
-    with get_db() as db:
-        with db.cursor() as cur:
-            cur.execute(
-                "UPDATE items SET name = %s, type = %s, subtype = %s, size = %s, color = %s, image_url = %s, description = %s WHERE id = %s AND inventory_id = %s",
-                (name, type, subtype, size, color, image_url, description, item_id, inventory_id)
-            )
-            db.commit()
-    
     return redirect(f"/inventory/{inventory_id}")
 
 @app.route("/inventory/<int:inventory_id>/duplicate_item/<int:item_id>", methods=["POST"])
@@ -364,7 +351,7 @@ def search_product_images():
                     cx=SEARCH_ENGINE_ID,
                     searchType='image',
                     num=8,
-                    imgType='product',
+                    imgType='photo',
                     safe='active'
                 ).execute()
                 
@@ -386,7 +373,29 @@ def search_product_images():
         logging.error(f"General error: {str(e)}")
         return jsonify({'success': False, 'error': 'Server error'}), 500
 
+@app.route("/inventory/<int:inventory_id>/wear_item/<int:item_id>", methods=["POST"])
+@login_required
+def wear_item(inventory_id, item_id):
+    with get_db() as db:
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE items SET wear_status = wear_status + 33 WHERE id = %s AND inventory_id = %s",
+                (item_id, inventory_id)
+            )
+            db.commit()
+    return jsonify({"success": True})
 
+@app.route("/inventory/<int:inventory_id>/wash_item/<int:item_id>", methods=["POST"])
+@login_required
+def wash_item(inventory_id, item_id):
+    with get_db() as db:
+        with db.cursor() as cur:
+            cur.execute(
+                "UPDATE items SET wear_status = 0 WHERE id = %s AND inventory_id = %s",
+                (item_id, inventory_id)
+            )
+            db.commit()
+    return jsonify({"success": True})
 
 if __name__ == "__main__":
     app.run(debug=True)
