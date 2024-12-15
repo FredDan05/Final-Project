@@ -11,7 +11,7 @@
     <!-- Grid of items -->
     <div class="row row-cols-1 row-cols-md-3 g-4">
         {% for item in items %}
-        {% if item.name|lower is containing(request.args.get('search', '')|lower) %}
+        {% if request.args.get('search', '')|lower in item.name|lower %}
         <div class="col">
             <div class="card h-100">
                 <div class="card-body">
